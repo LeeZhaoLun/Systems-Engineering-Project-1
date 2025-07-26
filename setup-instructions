@@ -1,0 +1,22 @@
+Rtabmap Mapping
+Commands
+- roslaunch limo_bringup limo_start.launch
+- pub_odom_tf:=false
+- roslaunch astra_camera dabai_u3.launch
+- roslaunch limo_bringup limo_rtabmap_orbbec.launch
+- roslaunch limo_bringup rtabmap_rviz.launch
+
+Save Map
+Map database created is saved directly in into ~/. ros/rtabmap. db
+
+Rtabmap Navigation
+Bringup LIMO
+- roslaunch limo_bringup limo_start.launch pub_odom_tf:=false
+- roslaunch astra_camera dabai_u3.launch
+- roslaunch limo_bringup limo_rtabmap_orbbec.launch localization:=true
+
+Launch Differential Mode Navigation
+- roslaunch limo_bringup limo_navigation_rtabmap.launch
+
+Launch Rviz
+- roslaunch limo_bringup rtabmap_rviz.launch
