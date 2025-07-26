@@ -22,16 +22,18 @@ def send_goal(x, y, yaw=0.0, timeout=30.0):
 
     rospy.loginfo("Sending goal: x=%.2f, y=%.2f, yaw=%.2f", x, y, yaw)
     client.send_goal(goal)
+
     finished = client.wait_for_result(rospy.Duration(timeout))
 
     if not finished:
         client.cancel_goal()
-        rospy.logwarn("Timeout: Failed to reach (%.2f, %.2f)", x, y)
+        rospy.logwarn("Timeout: Failed to reach (%.2f, %.2f) in %.1f seconds", x, y, timeout)
         return False
     elif client.get_state() != actionlib.GoalStatus.SUCCEEDED:
         rospy.logwarn("Move_base reported failure at (%.2f, %.2f)", x, y)
         return False
-    return True
+    else:
+        return True
 
 if __name__ == '__main__':
     rospy.init_node('waypoint_navigation')
@@ -41,35 +43,29 @@ if __name__ == '__main__':
     client.wait_for_server()
     rospy.loginfo("Connected to move_base action server.")
 
-    # Map of numbers to coordinates (as per your label)
-    numbered_waypoints = {
-        1: [1.296, -1.314],      # Rahim
-        2: [-0.109, -1.242],     # Joshua
-        3: [-1.532, -1.394],     # Yong Zhou
-        4: [-1.817, -0.031],     # Daryl
-        5: [-1.825, 1.787],      # Jarvis
-        6: [-0.251, 1.628],      # Yong Jie
-        7: [1.053, 1.670],       # Hazwan
-        8: [1.251, 0.086],       # Kieran
-        9: [0.086, 0.041]        # Middle
+    waypoint_map = {
+        9: [0.086, 0.041, 0.0],       # middle
+        8: [1.251, 0.086, 0.0],       # kieran
+        7: [1.053, 1.670, 0.0],       # hazwan
+        6: [-0.251, 1.628, 0.0],      # yong jie
+        5: [-1.825, 1.787, 0.0],      # jarvis
+        4: [-1.817, -0.031, 0.0],     # daryl
+        3: [-1.532, -1.394, 0.0],     # yong zhou
+        2: [-0.109, -1.242, 0.0],     # joshua
+        1: [1.296, -1.314, 0.0],      # rahim
     }
 
-    # Get 3 numbers from user input
     try:
-        input_str = raw_input("Enter 3 waypoint numbers (1-9, space-separated): ")  # Python 2
-    except NameError:
-        input_str = input("Enter 3 waypoint numbers (1-9, space-separated): ")     # Python 3
+        user_input = raw_input("Enter up to 9 waypoint numbers (1-9) separated by spaces: ")
+        selections = [int(x) for x in user_input.strip().split() if int(x) in waypoint_map]
+    except Exception as e:
+        rospy.logerr("Invalid input. Please enter numbers 1 to 9 only.")
+        exit(1)
 
-    numbers = [int(n) for n in input_str.strip().split() if n.isdigit() and 1 <= int(n) <= 9]
-
-    if len(numbers) != 3:
-        rospy.logerr("Please enter exactly 3 valid numbers from 1 to 9.")
-    else:
-        for idx, n in enumerate(numbers):
-            x, y = numbered_waypoints[n]
-            success = send_goal(x, y, yaw=0.0, timeout=45.0)
-            if success:
-                rospy.loginfo("Reached position %d at (%.2f, %.2f)", n, x, y)
-            else:
-                rospy.logwarn("Skipped position %d at (%.2f, %.2f)", n, x, y)
-
+    for i, wp_id in enumerate(selections):
+        coords = waypoint_map[wp_id]
+        success = send_goal(coords[0], coords[1], coords[2], timeout=300.0)
+        if success:
+            rospy.loginfo("Reached waypoint %d (%d): (%.2f, %.2f)", i+1, wp_id, coords[0], coords[1])
+        else:
+            rospy.logwarn("Skipping waypoint %d (%d): (%.2f, %.2f)", i+1, wp_id, coords[0], coords[1])
